@@ -515,7 +515,7 @@ class ApplicationMain {
 		
 		config = {
 			
-			build: "141",
+			build: "142",
 			company: "Sam Bumgardner",
 			file: "csc-303-platformer",
 			fps: 60,
