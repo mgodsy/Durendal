@@ -22,7 +22,7 @@
 -D web
 --remap flash:openfl
 --macro flixel.system.macros.FlxDefines.run()
--js export/html5/bin/csc-303-platformer.js
+-js export/html5/bin/Durendal_Slime.js
 -cp export/html5/haxe
 -D html5
 --macro allowPackage("flash")
