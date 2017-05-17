@@ -7,7 +7,7 @@ import flixel.FlxObject;
 import flixel.FlxSprite;
 import flixel.util.FlxColor;
 
-class Goo extends FlxSprite {
+class GooBomb extends FlxSprite {
 
     private var speed:Int = 225;
 
@@ -15,17 +15,17 @@ class Goo extends FlxSprite {
 
         super(X, Y);
         loadGraphic("assets/spit.png", true, 16, 16);
+        hitboxRadius = 8;
 
     }
 
-    public function expellGoo() {
-
-
+    public function gooExplode() {
+       
 
     }
 
     override public function update(elapsed:Float):Void {
-	
+  	
 		super.update(elapsed);
 
 	}
