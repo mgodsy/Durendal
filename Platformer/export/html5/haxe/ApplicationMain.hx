@@ -203,11 +203,11 @@ class ApplicationMain {
 		
 		config = {
 			
-			build: "255",
-			company: "Sam Bumgardner",
-			file: "csc-303-platformer",
+			build: "256",
+			company: "Mark Godsy",
+			file: "Durendal_Slime",
 			fps: 60,
-			name: "csc-303-platformer",
+			name: "Durendal_Slime",
 			orientation: "",
 			packageName: "com.example.myapp",
 			version: "0.0.1",
@@ -225,7 +225,7 @@ class ApplicationMain {
 					parameters: "{}",
 					resizable: false,
 					stencilBuffer: true,
-					title: "csc-303-platformer",
+					title: "Durendal_Slime",
 					vsync: true,
 					width: 640,
 					x: null,
