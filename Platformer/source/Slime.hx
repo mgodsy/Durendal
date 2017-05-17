@@ -335,7 +335,7 @@ class Spit extends FlxFSMState<FlxSprite>
 		
 			if (FlxG.keys.pressed.SPACE)
 			{	
-				goo.reset(owner.x + owner.width/2 - goo.width/2, owner.y);
+				goo.reset((owner.x + (owner.width - goo.width) / 2), (owner.y + (owner.height - goo.height) / 2));
 				if (owner.facing == FlxObject.RIGHT){
 					goo.velocity.x = 200;
 					goo.acceleration.y = 200;
@@ -348,7 +348,7 @@ class Spit extends FlxFSMState<FlxSprite>
 			}
 			else if (gp != null){
 				if (gp.pressed.X){
-					goo.reset(owner.x + owner.width/2 - goo.width/2, owner.y);
+					goo.reset((owner.x + (owner.width - goo.width) / 2), (owner.y + (owner.height - goo.height) / 2));
 					if (owner.facing == FlxObject.RIGHT){
 						goo.velocity.x = 200;
 						goo.acceleration.y = 200;

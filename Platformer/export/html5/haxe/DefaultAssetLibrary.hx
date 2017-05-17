@@ -1,563 +1,3 @@
-#if !lime_hybrid
-
-
-package;
-
-
-import haxe.Timer;
-import haxe.Unserializer;
-import openfl.display.Bitmap;
-import openfl.display.BitmapData;
-import openfl.display.MovieClip;
-import openfl.events.Event;
-import openfl.text.Font;
-import openfl.media.Sound;
-import openfl.net.URLRequest;
-import openfl.utils.ByteArray;
-import openfl.Assets;
-
-#if neko
-import neko.vm.Deque;
-import neko.vm.Thread;
-#elseif cpp
-import cpp.vm.Deque;
-import cpp.vm.Thread;
-#end
-
-#if sys
-import sys.FileSystem;
-#end
-
-#if ios
-import openfl._legacy.utils.SystemPath;
-#end
-
-
-@:access(openfl.media.Sound)
-class DefaultAssetLibrary extends AssetLibrary {
-	
-	
-	private static var loaded = 0;
-	private static var loading = 0;
-	private static var workerIncomingQueue = new Deque<Dynamic> ();
-	private static var workerResult = new Deque<Dynamic> ();
-	private static var workerThread:Thread;
-	
-	public var className (default, null) = new Map <String, Dynamic> ();
-	public var path (default, null) = new Map <String, String> ();
-	public var type (default, null) = new Map <String, AssetType> ();
-	
-	private var lastModified:Float;
-	private var timer:Timer;
-	
-	
-	public function new () {
-		
-		super ();
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		Font.registerFont (__ASSET__flixel_fonts_nokiafc22_ttf);
-		Font.registerFont (__ASSET__flixel_fonts_monsterrat_ttf);
-		
-		
-		
-		
-		#if (windows || mac || linux)
-		
-		var useManifest = false;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		
-		className.set ("flixel/sounds/beep.ogg", __ASSET__flixel_sounds_beep_ogg);
-		type.set ("flixel/sounds/beep.ogg", AssetType.SOUND);
-		
-		className.set ("flixel/sounds/flixel.ogg", __ASSET__flixel_sounds_flixel_ogg);
-		type.set ("flixel/sounds/flixel.ogg", AssetType.SOUND);
-		
-		className.set ("flixel/fonts/nokiafc22.ttf", __ASSET__flixel_fonts_nokiafc22_ttf);
-		type.set ("flixel/fonts/nokiafc22.ttf", AssetType.FONT);
-		
-		className.set ("flixel/fonts/monsterrat.ttf", __ASSET__flixel_fonts_monsterrat_ttf);
-		type.set ("flixel/fonts/monsterrat.ttf", AssetType.FONT);
-		
-		className.set ("flixel/images/ui/button.png", __ASSET__flixel_images_ui_button_png);
-		type.set ("flixel/images/ui/button.png", AssetType.IMAGE);
-		
-		className.set ("flixel/images/logo/default.png", __ASSET__flixel_images_logo_default_png);
-		type.set ("flixel/images/logo/default.png", AssetType.IMAGE);
-		
-		
-		if (useManifest) {
-			
-			loadManifest ();
-			
-			if (Sys.args ().indexOf ("-livereload") > -1) {
-				
-				var path = FileSystem.fullPath ("manifest");
-				lastModified = FileSystem.stat (path).mtime.getTime ();
-				
-				timer = new Timer (2000);
-				timer.run = function () {
-					
-					var modified = FileSystem.stat (path).mtime.getTime ();
-					
-					if (modified > lastModified) {
-						
-						lastModified = modified;
-						loadManifest ();
-						
-						if (eventCallback != null) {
-							
-							eventCallback (this, "change");
-							
-						}
-						
-					}
-					
-				}
-				
-			}
-			
-		}
-		
-		#else
-		
-		loadManifest ();
-		
-		#end
-		
-	}
-	
-	
-	public override function exists (id:String, type:AssetType):Bool {
-		
-		var assetType = this.type.get (id);
-		
-		if (assetType != null) {
-			
-			if (assetType == type || ((type == SOUND || type == MUSIC) && (assetType == MUSIC || assetType == SOUND))) {
-				
-				return true;
-				
-			}
-			
-			if (type == BINARY || type == null || (assetType == BINARY && type == TEXT)) {
-				
-				return true;
-				
-			}
-			
-		}
-		
-		return false;
-		
-	}
-	
-	
-	public override function getBitmapData (id:String):BitmapData {
-		
-		if (className.exists (id)) {
-			
-			return cast (Type.createInstance (className.get (id), []), BitmapData);
-			
-		} else {
-			
-			return BitmapData.load (path.get (id));
-			
-		}
-		
-	}
-	
-	
-	public override function getBytes (id:String):ByteArray {
-		
-		if (className.exists (id)) {
-			
-			return cast (Type.createInstance (className.get (id), []), ByteArray);
-			
-		} else {
-			
-			return ByteArray.readFile (path.get (id));
-			
-		}
-		
-	}
-	
-	
-	public override function getFont (id:String):Font {
-		
-		if (className.exists (id)) {
-			
-			var fontClass = className.get (id);
-			Font.registerFont (fontClass);
-			return cast (Type.createInstance (fontClass, []), Font);
-			
-		} else {
-			
-			return new Font (path.get (id));
-			
-		}
-		
-	}
-	
-	
-	public override function getMusic (id:String):Sound {
-		
-		if (className.exists (id)) {
-			
-			return cast (Type.createInstance (className.get (id), []), Sound);
-			
-		} else {
-			
-			return new Sound (new URLRequest (path.get (id)), null, true);
-			
-		}
-		
-	}
-	
-	
-	public override function getPath (id:String):String {
-		
-		#if ios
-		
-		return SystemPath.applicationDirectory + "/assets/" + path.get (id);
-		
-		#else
-		
-		return path.get (id);
-		
-		#end
-		
-	}
-	
-	
-	public override function getSound (id:String):Sound {
-		
-		if (className.exists (id)) {
-			
-			return cast (Type.createInstance (className.get (id), []), Sound);
-			
-		} else {
-			
-			return new Sound (new URLRequest (path.get (id)), null, type.get (id) == MUSIC);
-			
-		}
-		
-	}
-	
-	
-	public override function getText (id:String):String {
-		
-		var bytes = getBytes (id);
-		
-		if (bytes == null) {
-			
-			return null;
-			
-		} else {
-			
-			return bytes.readUTFBytes (bytes.length);
-			
-		}
-		
-	}
-	
-	
-	public override function isLocal (id:String, type:AssetType):Bool {
-		
-		return true;
-		
-	}
-	
-	
-	public override function list (type:AssetType):Array<String> {
-		
-		var items = [];
-		
-		for (id in this.type.keys ()) {
-			
-			if (type == null || exists (id, type)) {
-				
-				items.push (id);
-				
-			}
-			
-		}
-		
-		return items;
-		
-	}
-	
-	
-	public override function loadBitmapData (id:String, handler:BitmapData -> Void):Void {
-		
-		__load (getBitmapData, id, handler);
-		
-	}
-	
-	
-	public override function loadBytes (id:String, handler:ByteArray -> Void):Void {
-		
-		__load (getBytes, id, handler);
-		
-	}
-	
-	
-	public override function loadFont (id:String, handler:Font -> Void):Void {
-		
-		__load (getFont, id, handler);
-		
-	}
-	
-	
-	private function loadManifest ():Void {
-		
-		try {
-			
-			#if blackberry
-			var bytes = ByteArray.readFile ("app/native/manifest");
-			#elseif tizen
-			var bytes = ByteArray.readFile ("../res/manifest");
-			#elseif emscripten
-			var bytes = ByteArray.readFile ("assets/manifest");
-			#else
-			var bytes = ByteArray.readFile ("manifest");
-			#end
-			
-			if (bytes != null) {
-				
-				bytes.position = 0;
-				
-				if (bytes.length > 0) {
-					
-					var data = bytes.readUTFBytes (bytes.length);
-					
-					if (data != null && data.length > 0) {
-						
-						var manifest:Array<Dynamic> = Unserializer.run (data);
-						
-						for (asset in manifest) {
-							
-							if (!className.exists (asset.id)) {
-								
-								path.set (asset.id, asset.path);
-								type.set (asset.id, Type.createEnum (AssetType, asset.type));
-								
-							}
-							
-						}
-						
-					}
-					
-				}
-				
-			} else {
-				
-				trace ("Warning: Could not load asset manifest (bytes was null)");
-				
-			}
-		
-		} catch (e:Dynamic) {
-			
-			trace ('Warning: Could not load asset manifest (${e})');
-			
-		}
-		
-	}
-	
-	
-	public override function loadMusic (id:String, handler:Sound -> Void):Void {
-		
-		__load (getMusic, id, handler);
-		
-	}
-	
-	
-	public override function loadSound (id:String, handler:Sound -> Void):Void {
-		
-		__load (getSound, id, handler);
-		
-	}
-	
-	
-	public override function loadText (id:String, handler:String -> Void):Void {
-		
-		var callback = function (bytes:ByteArray):Void {
-			
-			if (bytes == null) {
-				
-				handler (null);
-				
-			} else {
-				
-				handler (bytes.readUTFBytes (bytes.length));
-				
-			}
-			
-		}
-		
-		loadBytes (id, callback);
-		
-	}
-	
-	
-	private static function __doWork ():Void {
-		
-		while (true) {
-			
-			var message = workerIncomingQueue.pop (true);
-			
-			if (message == "WORK") {
-				
-				var getMethod = workerIncomingQueue.pop (true);
-				var id = workerIncomingQueue.pop (true);
-				var handler = workerIncomingQueue.pop (true);
-				
-				var data = getMethod (id);
-				workerResult.add ("RESULT");
-				workerResult.add (data);
-				workerResult.add (handler);
-				
-			} else if (message == "EXIT") {
-				
-				break;
-				
-			}
-			
-		}
-		
-	}
-	
-	
-	private inline function __load<T> (getMethod:String->T, id:String, handler:T->Void):Void {
-		
-		workerIncomingQueue.add ("WORK");
-		workerIncomingQueue.add (getMethod);
-		workerIncomingQueue.add (id);
-		workerIncomingQueue.add (handler);
-		
-		loading++;
-		
-	}
-	
-	
-	public static function __poll ():Void {
-		
-		if (loading > loaded) {
-			
-			if (workerThread == null) {
-				
-				workerThread = Thread.create (__doWork);
-				
-			}
-			
-			var message = workerResult.pop (false);
-			
-			while (message == "RESULT") {
-				
-				loaded++;
-				
-				var data = workerResult.pop (true);
-				var handler = workerResult.pop (true);
-				
-				if (handler != null) {
-					
-					handler (data);
-					
-				}
-				
-				message = workerResult.pop (false);
-				
-			}
-			
-		} else {
-			
-			if (workerThread != null) {
-				
-				workerIncomingQueue.add ("EXIT");
-				workerThread = null;
-				
-			}
-			
-		}
-		
-	}
-	
-	
-}
-
-
-#if (windows || mac || linux)
-
-
-@:sound("C:/haxetoolkit/haxe/flixel/4,2,1/assets/sounds/beep.ogg") @:keep #if display private #end class __ASSET__flixel_sounds_beep_ogg extends flash.media.Sound {}
-@:sound("C:/haxetoolkit/haxe/flixel/4,2,1/assets/sounds/flixel.ogg") @:keep #if display private #end class __ASSET__flixel_sounds_flixel_ogg extends flash.media.Sound {}
-@:font("C:/haxetoolkit/haxe/flixel/4,2,1/assets/fonts/nokiafc22.ttf") @:keep #if display private #end class __ASSET__flixel_fonts_nokiafc22_ttf extends flash.text.Font {}
-@:font("C:/haxetoolkit/haxe/flixel/4,2,1/assets/fonts/monsterrat.ttf") @:keep #if display private #end class __ASSET__flixel_fonts_monsterrat_ttf extends flash.text.Font {}
-@:bitmap("C:/haxetoolkit/haxe/flixel/4,2,1/assets/images/ui/button.png") @:keep #if display private #end class __ASSET__flixel_images_ui_button_png extends flash.display.BitmapData {}
-@:bitmap("C:/haxetoolkit/haxe/flixel/4,2,1/assets/images/logo/default.png") @:keep #if display private #end class __ASSET__flixel_images_logo_default_png extends flash.display.BitmapData {}
-
-
-
-
-
-#else
-
-
-class __ASSET__flixel_fonts_nokiafc22_ttf extends openfl.text.Font { public function new () { super (); __fontPath = "flixel/fonts/nokiafc22.ttf"; fontName = "Nokia Cellphone FC Small";  }}
-class __ASSET__flixel_fonts_monsterrat_ttf extends openfl.text.Font { public function new () { super (); __fontPath = "flixel/fonts/monsterrat.ttf"; fontName = "Monsterrat";  }}
-
-
-#end
-
-
-#else
-
-
 package;
 
 
@@ -570,8 +10,10 @@ import lime.audio.AudioSource;
 import lime.audio.openal.AL;
 import lime.audio.AudioBuffer;
 import lime.graphics.Image;
+import lime.net.HTTPRequest;
+import lime.system.CFFI;
 import lime.text.Font;
-import lime.utils.ByteArray;
+import lime.utils.Bytes;
 import lime.utils.UInt8Array;
 import lime.Assets;
 
@@ -579,10 +21,7 @@ import lime.Assets;
 import sys.FileSystem;
 #end
 
-#if (js && html5)
-import lime.net.URLLoader;
-import lime.net.URLRequest;
-#elseif flash
+#if flash
 import flash.display.Bitmap;
 import flash.display.BitmapData;
 import flash.display.Loader;
@@ -645,49 +84,49 @@ class DefaultAssetLibrary extends AssetLibrary {
 		
 		#if flash
 		
-		path.set ("assets/data/data-goes-here.txt", "assets/data/data-goes-here.txt");
+		className.set ("assets/data/data-goes-here.txt", __ASSET__assets_data_data_goes_here_txt);
 		type.set ("assets/data/data-goes-here.txt", AssetType.TEXT);
-		path.set ("assets/images/Brick.png", "assets/images/Brick.png");
+		className.set ("assets/images/Brick.png", __ASSET__assets_images_brick_png);
 		type.set ("assets/images/Brick.png", AssetType.IMAGE);
-		path.set ("assets/images/bricks.png", "assets/images/bricks.png");
+		className.set ("assets/images/bricks.png", __ASSET__assets_images_bricks_png);
 		type.set ("assets/images/bricks.png", AssetType.IMAGE);
-		path.set ("assets/images/bullet.png", "assets/images/bullet.png");
+		className.set ("assets/images/bullet.png", __ASSET__assets_images_bullet_png);
 		type.set ("assets/images/bullet.png", AssetType.IMAGE);
-		path.set ("assets/images/cannon-ball-dark.png", "assets/images/cannon-ball-dark.png");
+		className.set ("assets/images/cannon-ball-dark.png", __ASSET__assets_images_cannon_ball_dark_png);
 		type.set ("assets/images/cannon-ball-dark.png", AssetType.IMAGE);
-		path.set ("assets/images/cannon-ball.png", "assets/images/cannon-ball.png");
+		className.set ("assets/images/cannon-ball.png", __ASSET__assets_images_cannon_ball_png);
 		type.set ("assets/images/cannon-ball.png", AssetType.IMAGE);
-		path.set ("assets/images/coinIcon.png", "assets/images/coinIcon.png");
+		className.set ("assets/images/coinIcon.png", __ASSET__assets_images_coinicon_png);
 		type.set ("assets/images/coinIcon.png", AssetType.IMAGE);
-		path.set ("assets/images/DontTouchMe.png", "assets/images/DontTouchMe.png");
+		className.set ("assets/images/DontTouchMe.png", __ASSET__assets_images_donttouchme_png);
 		type.set ("assets/images/DontTouchMe.png", AssetType.IMAGE);
-		path.set ("assets/images/Empty.png", "assets/images/Empty.png");
+		className.set ("assets/images/Empty.png", __ASSET__assets_images_empty_png);
 		type.set ("assets/images/Empty.png", AssetType.IMAGE);
-		path.set ("assets/images/images-go-here.txt", "assets/images/images-go-here.txt");
+		className.set ("assets/images/images-go-here.txt", __ASSET__assets_images_images_go_here_txt);
 		type.set ("assets/images/images-go-here.txt", AssetType.TEXT);
-		path.set ("assets/images/Item.png", "assets/images/Item.png");
+		className.set ("assets/images/Item.png", __ASSET__assets_images_item_png);
 		type.set ("assets/images/Item.png", AssetType.IMAGE);
-		path.set ("assets/images/Sentry.png", "assets/images/Sentry.png");
+		className.set ("assets/images/Sentry.png", __ASSET__assets_images_sentry_png);
 		type.set ("assets/images/Sentry.png", AssetType.IMAGE);
-		path.set ("assets/images/tiles.png", "assets/images/tiles.png");
+		className.set ("assets/images/tiles.png", __ASSET__assets_images_tiles_png);
 		type.set ("assets/images/tiles.png", AssetType.IMAGE);
-		path.set ("assets/music/music-goes-here.txt", "assets/music/music-goes-here.txt");
+		className.set ("assets/music/music-goes-here.txt", __ASSET__assets_music_music_goes_here_txt);
 		type.set ("assets/music/music-goes-here.txt", AssetType.TEXT);
-		path.set ("assets/powerup.png", "assets/powerup.png");
+		className.set ("assets/powerup.png", __ASSET__assets_powerup_png);
 		type.set ("assets/powerup.png", AssetType.IMAGE);
-		path.set ("assets/slime.png", "assets/slime.png");
+		className.set ("assets/slime.png", __ASSET__assets_slime_png);
 		type.set ("assets/slime.png", AssetType.IMAGE);
-		path.set ("assets/sounds/sounds-go-here.txt", "assets/sounds/sounds-go-here.txt");
+		className.set ("assets/sounds/sounds-go-here.txt", __ASSET__assets_sounds_sounds_go_here_txt);
 		type.set ("assets/sounds/sounds-go-here.txt", AssetType.TEXT);
-		path.set ("assets/sounds/step.wav", "assets/sounds/step.wav");
+		className.set ("assets/sounds/step.wav", __ASSET__assets_sounds_step_wav);
 		type.set ("assets/sounds/step.wav", AssetType.SOUND);
-		path.set ("assets/sounds/win.wav", "assets/sounds/win.wav");
+		className.set ("assets/sounds/win.wav", __ASSET__assets_sounds_win_wav);
 		type.set ("assets/sounds/win.wav", AssetType.SOUND);
-		path.set ("assets/spit.png", "assets/spit.png");
+		className.set ("assets/spit.png", __ASSET__assets_spit_png);
 		type.set ("assets/spit.png", AssetType.IMAGE);
-		path.set ("assets/tiles.png", "assets/tiles.png");
+		className.set ("assets/tiles.png", __ASSET__assets_tiles_png);
 		type.set ("assets/tiles.png", AssetType.IMAGE);
-		path.set ("assets/tiles_2.png", "assets/tiles_2.png");
+		className.set ("assets/tiles_2.png", __ASSET__assets_tiles_2_png);
 		type.set ("assets/tiles_2.png", AssetType.IMAGE);
 		className.set ("flixel/sounds/beep.ogg", __ASSET__flixel_sounds_beep_ogg);
 		type.set ("flixel/sounds/beep.ogg", AssetType.SOUND);
@@ -708,69 +147,91 @@ class DefaultAssetLibrary extends AssetLibrary {
 		var id;
 		id = "assets/data/data-goes-here.txt";
 		path.set (id, id);
+		
 		type.set (id, AssetType.TEXT);
 		id = "assets/images/Brick.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/images/bricks.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/images/bullet.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/images/cannon-ball-dark.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/images/cannon-ball.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/images/coinIcon.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/images/DontTouchMe.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/images/Empty.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/images/images-go-here.txt";
 		path.set (id, id);
+		
 		type.set (id, AssetType.TEXT);
 		id = "assets/images/Item.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/images/Sentry.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/images/tiles.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/music/music-goes-here.txt";
 		path.set (id, id);
+		
 		type.set (id, AssetType.TEXT);
 		id = "assets/powerup.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/slime.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/sounds/sounds-go-here.txt";
 		path.set (id, id);
+		
 		type.set (id, AssetType.TEXT);
 		id = "assets/sounds/step.wav";
 		path.set (id, id);
+		
 		type.set (id, AssetType.SOUND);
 		id = "assets/sounds/win.wav";
 		path.set (id, id);
+		
 		type.set (id, AssetType.SOUND);
 		id = "assets/spit.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/tiles.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "assets/tiles_2.png";
 		path.set (id, id);
+		
 		type.set (id, AssetType.IMAGE);
 		id = "flixel/sounds/beep.ogg";
 		path.set (id, id);
@@ -813,28 +274,72 @@ class DefaultAssetLibrary extends AssetLibrary {
 		#if (windows || mac || linux)
 		
 		var useManifest = false;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
-		useManifest = true;
+		
+		className.set ("assets/data/data-goes-here.txt", __ASSET__assets_data_data_goes_here_txt);
+		type.set ("assets/data/data-goes-here.txt", AssetType.TEXT);
+		
+		className.set ("assets/images/Brick.png", __ASSET__assets_images_brick_png);
+		type.set ("assets/images/Brick.png", AssetType.IMAGE);
+		
+		className.set ("assets/images/bricks.png", __ASSET__assets_images_bricks_png);
+		type.set ("assets/images/bricks.png", AssetType.IMAGE);
+		
+		className.set ("assets/images/bullet.png", __ASSET__assets_images_bullet_png);
+		type.set ("assets/images/bullet.png", AssetType.IMAGE);
+		
+		className.set ("assets/images/cannon-ball-dark.png", __ASSET__assets_images_cannon_ball_dark_png);
+		type.set ("assets/images/cannon-ball-dark.png", AssetType.IMAGE);
+		
+		className.set ("assets/images/cannon-ball.png", __ASSET__assets_images_cannon_ball_png);
+		type.set ("assets/images/cannon-ball.png", AssetType.IMAGE);
+		
+		className.set ("assets/images/coinIcon.png", __ASSET__assets_images_coinicon_png);
+		type.set ("assets/images/coinIcon.png", AssetType.IMAGE);
+		
+		className.set ("assets/images/DontTouchMe.png", __ASSET__assets_images_donttouchme_png);
+		type.set ("assets/images/DontTouchMe.png", AssetType.IMAGE);
+		
+		className.set ("assets/images/Empty.png", __ASSET__assets_images_empty_png);
+		type.set ("assets/images/Empty.png", AssetType.IMAGE);
+		
+		className.set ("assets/images/images-go-here.txt", __ASSET__assets_images_images_go_here_txt);
+		type.set ("assets/images/images-go-here.txt", AssetType.TEXT);
+		
+		className.set ("assets/images/Item.png", __ASSET__assets_images_item_png);
+		type.set ("assets/images/Item.png", AssetType.IMAGE);
+		
+		className.set ("assets/images/Sentry.png", __ASSET__assets_images_sentry_png);
+		type.set ("assets/images/Sentry.png", AssetType.IMAGE);
+		
+		className.set ("assets/images/tiles.png", __ASSET__assets_images_tiles_png);
+		type.set ("assets/images/tiles.png", AssetType.IMAGE);
+		
+		className.set ("assets/music/music-goes-here.txt", __ASSET__assets_music_music_goes_here_txt);
+		type.set ("assets/music/music-goes-here.txt", AssetType.TEXT);
+		
+		className.set ("assets/powerup.png", __ASSET__assets_powerup_png);
+		type.set ("assets/powerup.png", AssetType.IMAGE);
+		
+		className.set ("assets/slime.png", __ASSET__assets_slime_png);
+		type.set ("assets/slime.png", AssetType.IMAGE);
+		
+		className.set ("assets/sounds/sounds-go-here.txt", __ASSET__assets_sounds_sounds_go_here_txt);
+		type.set ("assets/sounds/sounds-go-here.txt", AssetType.TEXT);
+		
+		className.set ("assets/sounds/step.wav", __ASSET__assets_sounds_step_wav);
+		type.set ("assets/sounds/step.wav", AssetType.SOUND);
+		
+		className.set ("assets/sounds/win.wav", __ASSET__assets_sounds_win_wav);
+		type.set ("assets/sounds/win.wav", AssetType.SOUND);
+		
+		className.set ("assets/spit.png", __ASSET__assets_spit_png);
+		type.set ("assets/spit.png", AssetType.IMAGE);
+		
+		className.set ("assets/tiles.png", __ASSET__assets_tiles_png);
+		type.set ("assets/tiles.png", AssetType.IMAGE);
+		
+		className.set ("assets/tiles_2.png", __ASSET__assets_tiles_2_png);
+		type.set ("assets/tiles_2.png", AssetType.IMAGE);
 		
 		className.set ("flixel/sounds/beep.ogg", __ASSET__flixel_sounds_beep_ogg);
 		type.set ("flixel/sounds/beep.ogg", AssetType.SOUND);
@@ -913,6 +418,10 @@ class DefaultAssetLibrary extends AssetLibrary {
 				
 				return true;
 				
+			} else if (requestedType == TEXT && assetType == BINARY) {
+				
+				return true;
+				
 			} else if (requestedType == null || path.exists (id)) {
 				
 				return true;
@@ -951,7 +460,7 @@ class DefaultAssetLibrary extends AssetLibrary {
 		
 		#else
 		
-		if (className.exists(id)) return AudioBuffer.fromBytes (cast (Type.createInstance (className.get (id), []), ByteArray));
+		if (className.exists(id)) return AudioBuffer.fromBytes (cast (Type.createInstance (className.get (id), []), Bytes));
 		else return AudioBuffer.fromFile (path.get (id));
 		
 		#end
@@ -959,7 +468,7 @@ class DefaultAssetLibrary extends AssetLibrary {
 	}
 	
 	
-	public override function getBytes (id:String):ByteArray {
+	public override function getBytes (id:String):Bytes {
 		
 		#if flash
 		
@@ -967,12 +476,12 @@ class DefaultAssetLibrary extends AssetLibrary {
 			
 			case TEXT, BINARY:
 				
-				return cast (Type.createInstance (className.get (id), []), ByteArray);
+				return Bytes.ofData (cast (Type.createInstance (className.get (id), []), flash.utils.ByteArray));
 			
 			case IMAGE:
 				
 				var bitmapData = cast (Type.createInstance (className.get (id), []), BitmapData);
-				return bitmapData.getPixels (bitmapData.rect);
+				return Bytes.ofData (bitmapData.getPixels (bitmapData.rect));
 			
 			default:
 				
@@ -980,11 +489,10 @@ class DefaultAssetLibrary extends AssetLibrary {
 			
 		}
 		
-		return cast (Type.createInstance (className.get (id), []), ByteArray);
+		return cast (Type.createInstance (className.get (id), []), Bytes);
 		
 		#elseif html5
 		
-		var bytes:ByteArray = null;
 		var loader = Preloader.loaders.get (path.get (id));
 		
 		if (loader == null) {
@@ -993,26 +501,10 @@ class DefaultAssetLibrary extends AssetLibrary {
 			
 		}
 		
-		var data = loader.data;
-		
-		if (Std.is (data, String)) {
-			
-			bytes = new ByteArray ();
-			bytes.writeUTFBytes (data);
-			
-		} else if (Std.is (data, ByteArray)) {
-			
-			bytes = cast data;
-			
-		} else {
-			
-			bytes = null;
-			
-		}
+		var bytes = loader.bytes;
 		
 		if (bytes != null) {
 			
-			bytes.position = 0;
 			return bytes;
 			
 		} else {
@@ -1022,8 +514,8 @@ class DefaultAssetLibrary extends AssetLibrary {
 		
 		#else
 		
-		if (className.exists(id)) return cast (Type.createInstance (className.get (id), []), ByteArray);
-		else return ByteArray.readFile (path.get (id));
+		if (className.exists(id)) return cast (Type.createInstance (className.get (id), []), Bytes);
+		else return Bytes.readFile (path.get (id));
 		
 		#end
 		
@@ -1139,7 +631,6 @@ class DefaultAssetLibrary extends AssetLibrary {
 		
 		#if html5
 		
-		var bytes:ByteArray = null;
 		var loader = Preloader.loaders.get (path.get (id));
 		
 		if (loader == null) {
@@ -1148,26 +639,11 @@ class DefaultAssetLibrary extends AssetLibrary {
 			
 		}
 		
-		var data = loader.data;
-		
-		if (Std.is (data, String)) {
-			
-			return cast data;
-			
-		} else if (Std.is (data, ByteArray)) {
-			
-			bytes = cast data;
-			
-		} else {
-			
-			bytes = null;
-			
-		}
+		var bytes = loader.bytes;
 		
 		if (bytes != null) {
 			
-			bytes.position = 0;
-			return bytes.readUTFBytes (bytes.length);
+			return bytes.getString (0, bytes.length);
 			
 		} else {
 			
@@ -1184,7 +660,7 @@ class DefaultAssetLibrary extends AssetLibrary {
 			
 		} else {
 			
-			return bytes.readUTFBytes (bytes.length);
+			return bytes.getString (0, bytes.length);
 			
 		}
 		
@@ -1281,21 +757,19 @@ class DefaultAssetLibrary extends AssetLibrary {
 	}
 	
 	
-	public override function loadBytes (id:String):Future<ByteArray> {
+	public override function loadBytes (id:String):Future<Bytes> {
 		
-		var promise = new Promise<ByteArray> ();
+		var promise = new Promise<Bytes> ();
 		
 		#if flash
 		
 		if (path.exists (id)) {
 			
 			var loader = new URLLoader ();
+			loader.dataFormat = flash.net.URLLoaderDataFormat.BINARY;
 			loader.addEventListener (Event.COMPLETE, function (event:Event) {
 				
-				var bytes = new ByteArray ();
-				bytes.writeUTFBytes (event.currentTarget.data);
-				bytes.position = 0;
-				
+				var bytes = Bytes.ofData (event.currentTarget.data);
 				promise.complete (bytes);
 				
 			});
@@ -1325,32 +799,8 @@ class DefaultAssetLibrary extends AssetLibrary {
 		
 		if (path.exists (id)) {
 			
-			var loader = new URLLoader ();
-			loader.dataFormat = BINARY;
-			loader.onComplete.add (function (_):Void {
-				
-				promise.complete (loader.data);
-				
-			});
-			loader.onProgress.add (function (_, loaded, total) {
-				
-				if (total == 0) {
-					
-					promise.progress (0);
-					
-				} else {
-					
-					promise.progress (loaded / total);
-					
-				}
-				
-			});
-			loader.onIOError.add (function (_, e) {
-				
-				promise.error (e);
-				
-			});
-			loader.load (new URLRequest (path.get (id)));
+			var request = new HTTPRequest ();
+			promise.completeWith (request.load (path.get (id) + "?" + Assets.cache.version));
 			
 		} else {
 			
@@ -1360,7 +810,7 @@ class DefaultAssetLibrary extends AssetLibrary {
 		
 		#else
 		
-		promise.completeWith (new Future<ByteArray> (function () return getBytes (id)));
+		promise.completeWith (new Future<Bytes> (function () return getBytes (id)));
 		
 		#end
 		
@@ -1417,7 +867,7 @@ class DefaultAssetLibrary extends AssetLibrary {
 				
 			}
 			image.onerror = promise.error;
-			image.src = path.get (id);
+			image.src = path.get (id) + "?" + Assets.cache.version;
 			
 		} else {
 			
@@ -1442,26 +892,24 @@ class DefaultAssetLibrary extends AssetLibrary {
 		try {
 			
 			#if blackberry
-			var bytes = ByteArray.readFile ("app/native/manifest");
+			var bytes = Bytes.readFile ("app/native/manifest");
 			#elseif tizen
-			var bytes = ByteArray.readFile ("../res/manifest");
+			var bytes = Bytes.readFile ("../res/manifest");
 			#elseif emscripten
-			var bytes = ByteArray.readFile ("assets/manifest");
+			var bytes = Bytes.readFile ("assets/manifest");
 			#elseif (mac && java)
-			var bytes = ByteArray.readFile ("../Resources/manifest");
-			#elseif ios
-			var bytes = ByteArray.readFile ("assets/manifest");
+			var bytes = Bytes.readFile ("../Resources/manifest");
+			#elseif (ios || tvos)
+			var bytes = Bytes.readFile ("assets/manifest");
 			#else
-			var bytes = ByteArray.readFile ("manifest");
+			var bytes = Bytes.readFile ("manifest");
 			#end
 			
 			if (bytes != null) {
 				
-				bytes.position = 0;
-				
 				if (bytes.length > 0) {
 					
-					var data = bytes.readUTFBytes (bytes.length);
+					var data = bytes.getString (0, bytes.length);
 					
 					if (data != null && data.length > 0) {
 						
@@ -1471,7 +919,7 @@ class DefaultAssetLibrary extends AssetLibrary {
 							
 							if (!className.exists (asset.id)) {
 								
-								#if ios
+								#if (ios || tvos)
 								path.set (asset.id, "assets/" + asset.path);
 								#else
 								path.set (asset.id, asset.path);
@@ -1510,27 +958,11 @@ class DefaultAssetLibrary extends AssetLibrary {
 		
 		if (path.exists (id)) {
 			
-			var loader = new URLLoader ();
-			loader.onComplete.add (function (_):Void {
-				
-				promise.complete (loader.data);
-				
-			});
-			loader.onProgress.add (function (_, loaded, total) {
-				
-				if (total == 0) {
-					
-					promise.progress (0);
-					
-				} else {
-					
-					promise.progress (loaded / total);
-					
-				}
-				
-			});
-			loader.onIOError.add (function (_, msg) promise.error (msg));
-			loader.load (new URLRequest (path.get (id)));
+			var request = new HTTPRequest ();
+			var future = request.load (path.get (id) + "?" + Assets.cache.version);
+			future.onProgress (function (progress) promise.progress (progress));
+			future.onError (function (msg) promise.error (msg));
+			future.onComplete (function (bytes) promise.complete (bytes.getString (0, bytes.length)));
 			
 		} else {
 			
@@ -1550,7 +982,7 @@ class DefaultAssetLibrary extends AssetLibrary {
 					
 				} else {
 					
-					return bytes.readUTFBytes (bytes.length);
+					return bytes.getString (0, bytes.length);
 					
 				}
 				
@@ -1571,28 +1003,28 @@ class DefaultAssetLibrary extends AssetLibrary {
 #if !display
 #if flash
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@:keep @:bind #if display private #end class __ASSET__assets_data_data_goes_here_txt extends null { }
+@:keep @:bind #if display private #end class __ASSET__assets_images_brick_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_images_bricks_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_images_bullet_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_images_cannon_ball_dark_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_images_cannon_ball_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_images_coinicon_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_images_donttouchme_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_images_empty_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_images_images_go_here_txt extends null { }
+@:keep @:bind #if display private #end class __ASSET__assets_images_item_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_images_sentry_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_images_tiles_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_music_music_goes_here_txt extends null { }
+@:keep @:bind #if display private #end class __ASSET__assets_powerup_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_slime_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_sounds_sounds_go_here_txt extends null { }
+@:keep @:bind #if display private #end class __ASSET__assets_sounds_step_wav extends null { }
+@:keep @:bind #if display private #end class __ASSET__assets_sounds_win_wav extends null { }
+@:keep @:bind #if display private #end class __ASSET__assets_spit_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_tiles_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
+@:keep @:bind #if display private #end class __ASSET__assets_tiles_2_png extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }
 @:keep @:bind #if display private #end class __ASSET__flixel_sounds_beep_ogg extends null { }
 @:keep @:bind #if display private #end class __ASSET__flixel_sounds_flixel_ogg extends null { }
 @:keep @:bind #if display private #end class __ASSET__flixel_fonts_nokiafc22_ttf extends null { }
@@ -1640,8 +1072,30 @@ class DefaultAssetLibrary extends AssetLibrary {
 #if (windows || mac || linux || cpp)
 
 
-@:file("C:/haxetoolkit/haxe/flixel/4,2,1/assets/sounds/beep.ogg") #if display private #end class __ASSET__flixel_sounds_beep_ogg extends lime.utils.ByteArray {}
-@:file("C:/haxetoolkit/haxe/flixel/4,2,1/assets/sounds/flixel.ogg") #if display private #end class __ASSET__flixel_sounds_flixel_ogg extends lime.utils.ByteArray {}
+@:file("assets/data/data-goes-here.txt") #if display private #end class __ASSET__assets_data_data_goes_here_txt extends lime.utils.Bytes {}
+@:image("assets/images/Brick.png") #if display private #end class __ASSET__assets_images_brick_png extends lime.graphics.Image {}
+@:image("assets/images/bricks.png") #if display private #end class __ASSET__assets_images_bricks_png extends lime.graphics.Image {}
+@:image("assets/images/bullet.png") #if display private #end class __ASSET__assets_images_bullet_png extends lime.graphics.Image {}
+@:image("assets/images/cannon-ball-dark.png") #if display private #end class __ASSET__assets_images_cannon_ball_dark_png extends lime.graphics.Image {}
+@:image("assets/images/cannon-ball.png") #if display private #end class __ASSET__assets_images_cannon_ball_png extends lime.graphics.Image {}
+@:image("assets/images/coinIcon.png") #if display private #end class __ASSET__assets_images_coinicon_png extends lime.graphics.Image {}
+@:image("assets/images/DontTouchMe.png") #if display private #end class __ASSET__assets_images_donttouchme_png extends lime.graphics.Image {}
+@:image("assets/images/Empty.png") #if display private #end class __ASSET__assets_images_empty_png extends lime.graphics.Image {}
+@:file("assets/images/images-go-here.txt") #if display private #end class __ASSET__assets_images_images_go_here_txt extends lime.utils.Bytes {}
+@:image("assets/images/Item.png") #if display private #end class __ASSET__assets_images_item_png extends lime.graphics.Image {}
+@:image("assets/images/Sentry.png") #if display private #end class __ASSET__assets_images_sentry_png extends lime.graphics.Image {}
+@:image("assets/images/tiles.png") #if display private #end class __ASSET__assets_images_tiles_png extends lime.graphics.Image {}
+@:file("assets/music/music-goes-here.txt") #if display private #end class __ASSET__assets_music_music_goes_here_txt extends lime.utils.Bytes {}
+@:image("assets/powerup.png") #if display private #end class __ASSET__assets_powerup_png extends lime.graphics.Image {}
+@:image("assets/slime.png") #if display private #end class __ASSET__assets_slime_png extends lime.graphics.Image {}
+@:file("assets/sounds/sounds-go-here.txt") #if display private #end class __ASSET__assets_sounds_sounds_go_here_txt extends lime.utils.Bytes {}
+@:file("assets/sounds/step.wav") #if display private #end class __ASSET__assets_sounds_step_wav extends lime.utils.Bytes {}
+@:file("assets/sounds/win.wav") #if display private #end class __ASSET__assets_sounds_win_wav extends lime.utils.Bytes {}
+@:image("assets/spit.png") #if display private #end class __ASSET__assets_spit_png extends lime.graphics.Image {}
+@:image("assets/tiles.png") #if display private #end class __ASSET__assets_tiles_png extends lime.graphics.Image {}
+@:image("assets/tiles_2.png") #if display private #end class __ASSET__assets_tiles_2_png extends lime.graphics.Image {}
+@:file("C:/haxetoolkit/haxe/flixel/4,2,1/assets/sounds/beep.ogg") #if display private #end class __ASSET__flixel_sounds_beep_ogg extends lime.utils.Bytes {}
+@:file("C:/haxetoolkit/haxe/flixel/4,2,1/assets/sounds/flixel.ogg") #if display private #end class __ASSET__flixel_sounds_flixel_ogg extends lime.utils.Bytes {}
 @:font("C:/haxetoolkit/haxe/flixel/4,2,1/assets/fonts/nokiafc22.ttf") #if display private #end class __ASSET__flixel_fonts_nokiafc22_ttf extends lime.text.Font {}
 @:font("C:/haxetoolkit/haxe/flixel/4,2,1/assets/fonts/monsterrat.ttf") #if display private #end class __ASSET__flixel_fonts_monsterrat_ttf extends lime.text.Font {}
 @:image("C:/haxetoolkit/haxe/flixel/4,2,1/assets/images/ui/button.png") #if display private #end class __ASSET__flixel_images_ui_button_png extends lime.graphics.Image {}
@@ -1657,8 +1111,5 @@ class DefaultAssetLibrary extends AssetLibrary {
 @:keep #if display private #end class __ASSET__OPENFL__flixel_fonts_monsterrat_ttf extends openfl.text.Font { public function new () { var font = new __ASSET__flixel_fonts_monsterrat_ttf (); src = font.src; name = font.name; super (); }}
 
 #end
-
-#end
-
 
 #end

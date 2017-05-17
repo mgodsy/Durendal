@@ -3,6 +3,7 @@ package;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
+import flixel.FlxObject;
 import flixel.text.FlxText;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxColor;
@@ -15,7 +16,7 @@ class PlayState extends FlxState
 	private var _map:FlxTilemap;
 	private var _slime:Slime;
 	private var _powerup:FlxSprite;
-	private var sprite:FlxSprite;
+	private var goo:Goo;
 	public var playerGoo:FlxTypedGroup<FlxSprite>;
 	
 	private var _info:String = "LEFT & RIGHT to move, UP to jump\nDOWN (in the air) " +
@@ -62,69 +63,44 @@ class PlayState extends FlxState
 		//Rainbows in the Dark
 		for (i in 0...numGoo)
 		{
-			sprite = new FlxSprite( -100, -100);
-			sprite.makeGraphic(4, 2, FlxColor.RED);
-			sprite.width = 10;
-			sprite.height = 10;
-			sprite.offset.set( -1, -8);
-			sprite.exists = false;
-			playerGoo.add(sprite);
+			goo = new Goo( -100, -100, FlxColor.RED);
+			goo.exists = false;
+			playerGoo.add(goo);
 
-			sprite = new FlxSprite( -100, -100);
-			sprite.makeGraphic(4, 2, FlxColor.ORANGE);
-			sprite.width = 10;
-			sprite.height = 10;
-			sprite.offset.set( -1, -8);
-			sprite.exists = false;
-			playerGoo.add(sprite);
+			goo = new Goo( -100, -100, FlxColor.ORANGE);
+			
+			goo.exists = false;
+			playerGoo.add(goo);
 
-			sprite = new FlxSprite( -100, -100);
-			sprite.makeGraphic(4, 2, FlxColor.YELLOW);
-			sprite.width = 10;
-			sprite.height = 10;
-			sprite.offset.set( -1, -8);
-			sprite.exists = false;
-			playerGoo.add(sprite);
+			goo = new Goo( -100, -100, FlxColor.YELLOW);
+			
+			goo.exists = false;
+			playerGoo.add(goo);
 
-			sprite = new FlxSprite( -100, -100);
-			sprite.makeGraphic(4, 2, FlxColor.LIME);
-			sprite.width = 10;
-			sprite.height = 10;
-			sprite.offset.set( -1, -8);
-			sprite.exists = false;
-			playerGoo.add(sprite);
+			goo = new Goo( -100, -100, FlxColor.LIME);
+			
+			goo.exists = false;
+			playerGoo.add(goo);
 
-			sprite = new FlxSprite( -100, -100);
-			sprite.makeGraphic(4, 2, FlxColor.CYAN);
-			sprite.width = 10;
-			sprite.height = 10;
-			sprite.offset.set( -1, -8);
-			sprite.exists = false;
-			playerGoo.add(sprite);
+			goo = new Goo( -100, -100, FlxColor.CYAN);
+			
+			goo.exists = false;
+			playerGoo.add(goo);
 
-			sprite = new FlxSprite( -100, -100);
-			sprite.makeGraphic(4, 2, FlxColor.BLUE);
-			sprite.width = 10;
-			sprite.height = 10;
-			sprite.offset.set( -1, -8);
-			sprite.exists = false;
-			playerGoo.add(sprite);
+			goo = new Goo( -100, -100, FlxColor.BLUE);
+			
+			goo.exists = false;
+			playerGoo.add(goo);
 
-			sprite = new FlxSprite( -100, -100);
-			sprite.makeGraphic(4, 2, FlxColor.PURPLE);
-			sprite.width = 10;
-			sprite.height = 10;
-			sprite.offset.set( -1, -8);
-			sprite.exists = false;
-			playerGoo.add(sprite);
+			goo = new Goo( -100, -100, FlxColor.PURPLE);
+			
+			goo.exists = false;
+			playerGoo.add(goo);
 
-			sprite = new FlxSprite( -100, -100);
-			sprite.makeGraphic(4, 2, FlxColor.MAGENTA);
-			sprite.width = 10;
-			sprite.height = 10;
-			sprite.offset.set( -1, -8);
-			sprite.exists = false;
-			playerGoo.add(sprite);
+			goo = new Goo( -100, -100, FlxColor.MAGENTA);
+			
+			goo.exists = false;
+			playerGoo.add(goo);
 
 		}
 
@@ -138,9 +114,14 @@ class PlayState extends FlxState
 	{
 		super.update(elapsed);	
 		FlxG.collide(_map, _slime);
-		//FlxG.overlap(_slime, _powerup, getPowerup);
+		FlxG.collide(_map, playerGoo);
+		//FlxG.collide(playerGoo, playerGoo);
+
+		//FlxG.overlap(_map, playerGoo, goo.cleanUp);
+		// FlxG.overlap(_slime, _powerup, getPowerup);
 		
 		//_txtInfo.text = _info.replace("{STATE}", Type.getClassName(_slime.fsm.stateClass));
+		
 		
 		if (FlxG.keys.justReleased.R)
 		{
@@ -155,4 +136,4 @@ class PlayState extends FlxState
 		
 		particle.kill();
 	}
-}
+} 
