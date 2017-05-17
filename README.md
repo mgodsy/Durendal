@@ -6,6 +6,8 @@ The initial project goal is to learn and explore the Haxe game engine's support 
 
 ![reSlime](/docs/slimeAlpha01.png?raw=true)
 
+### Live Demo
+![Demo](https://mgodsy.github.io/Durendal/index.html)
 
 ### The Long Run -
 The overarching goal is to build my own code base into something more than a slime in the sewers. I'm looking into creating a Side Scrolling Platform|Shooter (Super Metroid, Contra, and conceptually closest to, Metal Slug)
