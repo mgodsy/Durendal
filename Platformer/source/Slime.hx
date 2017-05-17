@@ -40,11 +40,16 @@ class Slime extends FlxSprite
 		fsm = new FlxFSM<FlxSprite>(this);
 		fsm.transitions
 			.add(Idle, Jump, Conditions.jump)
+			.add(Idle, Spit, Conditions.spit)
+			.add(Spit, Idle, Conditions.stopSpit)
+			.add(Spit, Jump, Conditions.jump)
+			.add(Jump, Spit, Conditions.spit)
 			.add(Jump, Idle, Conditions.grounded)
 			.add(Jump, GroundPound, Conditions.groundSlam)
 			.add(Jump, DoubleJump, Conditions.doubleJump)
 			.add(DoubleJump, Idle, Conditions.grounded)
 			.add(DoubleJump, GroundPound, Conditions.groundSlam)
+			.add(DoubleJump, Spit, Conditions.spit)
 			//.add(DoubleJump, TripleJump, Conditions.doubleJump)
 			//.add(TripleJump, Idle, Conditions.grounded)
 			//.add(TripleJump, GroundPound, Conditions.groundSlam)
@@ -78,27 +83,70 @@ class Conditions
        
 	public static function jump(Owner:FlxSprite):Bool
 	{
-		return ( (FlxG.keys.justPressed.UP || gp.justPressed.A) && Owner.isTouching(FlxObject.DOWN));
+		if ( gp!= null){
+			return ( (FlxG.keys.justPressed.UP || gp.justPressed.A) && Owner.isTouching(FlxObject.DOWN));
+		}
+		else{
+			return (FlxG.keys.justPressed.UP && Owner.isTouching(FlxObject.DOWN));
+		}
 	}
 
-	public static function fire(Owner:FlxSprite):Bool
+	public static function spit(Owner:FlxSprite):Bool
 	{
-		return (FlxG.keys.justPressed.SPACE && Owner.isTouching(FlxObject.DOWN));
+
+		if (gp != null){
+			return (FlxG.keys.justPressed.SPACE || gp.justPressed.X);
+		}
+		else{
+			return (FlxG.keys.justPressed.SPACE);
+		}
 	}
 
 	public static function doubleJump(Owner:FlxSprite):Bool
 	{
-		return ((FlxG.keys.justPressed.UP || gp.justPressed.A) && !Owner.isTouching(FlxObject.DOWN));
+		if ( gp!= null){
+			return ((FlxG.keys.justPressed.UP || gp.justPressed.A) && !Owner.isTouching(FlxObject.DOWN));
+		}else{
+			return (FlxG.keys.justPressed.UP && !Owner.isTouching(FlxObject.DOWN));
+		}
 	}
 	
 	public static function grounded(Owner:FlxSprite):Bool
 	{
 		return Owner.isTouching(FlxObject.DOWN);
 	}
+
+	public static function stopSpit(Owner:FlxSprite):Bool
+	{
+		if ( gp!= null){
+			if (Owner.isTouching(FlxObject.DOWN)) {
+				Owner.velocity.x = 0;
+				return (FlxG.keys.justReleased.SPACE || gp.justReleased.X);
+			}
+			else
+			{
+				return (FlxG.keys.justReleased.SPACE || gp.justReleased.X);
+			}
+		}
+		else{
+			if (Owner.isTouching(FlxObject.DOWN)) {
+				Owner.velocity.x = 0;
+				return (FlxG.keys.justReleased.SPACE);
+			}
+			else
+			{
+				return (FlxG.keys.justReleased.SPACE);
+			}
+		}
+	}
 	
 	public static function groundSlam(Owner:FlxSprite)
 	{
-		return ((FlxG.keys.justPressed.DOWN || gp.pressed.B) && !Owner.isTouching(FlxObject.DOWN));
+		if ( gp!= null){
+			return ((FlxG.keys.justPressed.DOWN || gp.pressed.B) && !Owner.isTouching(FlxObject.DOWN));
+		}else{
+			return (FlxG.keys.justPressed.DOWN && !Owner.isTouching(FlxObject.DOWN));
+		}
 	}
 	
 	public static function animationFinished(Owner:FlxSprite):Bool
@@ -110,7 +158,7 @@ class Conditions
 class Idle extends FlxFSMState<FlxSprite>
 {
 	var gp:FlxGamepad = FlxG.gamepads.lastActive;
-
+	
 	override public function enter(owner:FlxSprite, fsm:FlxFSM<FlxSprite>):Void 
 	{
 		owner.animation.play("standing");
@@ -125,10 +173,17 @@ class Idle extends FlxFSMState<FlxSprite>
 			owner.animation.play("walking");
 			owner.acceleration.x = FlxG.keys.pressed.LEFT ? -300 : 300;
 		}
-		else if(gp.pressed.DPAD_LEFT || gp.pressed.DPAD_RIGHT){
-			owner.facing = (gp.pressed.DPAD_LEFT) ? FlxObject.LEFT : FlxObject.RIGHT;
-			owner.animation.play("walking");
-			owner.acceleration.x = gp.pressed.DPAD_LEFT ? -300 : 300;
+		else if (gp != null){
+			if(gp.pressed.DPAD_LEFT || gp.pressed.DPAD_RIGHT ){
+				owner.facing = (gp.pressed.DPAD_LEFT) ? FlxObject.LEFT : FlxObject.RIGHT;
+				owner.animation.play("walking");
+				owner.acceleration.x = gp.pressed.DPAD_LEFT ? -300 : 300;
+			}
+			else
+			{
+				owner.animation.play("standing");
+				owner.velocity.x *= 0.9;
+			}
 		}
 		else
 		{
@@ -157,10 +212,12 @@ class Jump extends FlxFSMState<FlxSprite>
 			owner.animation.play("jumping");
 			owner.acceleration.x = FlxG.keys.pressed.LEFT ? -300 : 300;
 		}
-		else if(gp.pressed.DPAD_LEFT || gp.pressed.DPAD_RIGHT){
-			owner.facing = (gp.pressed.DPAD_LEFT) ? FlxObject.LEFT : FlxObject.RIGHT;
-			owner.animation.play("jumping");
-			owner.acceleration.x = gp.pressed.DPAD_LEFT ? -300 : 300;
+		else if (gp != null){
+			if(gp.pressed.DPAD_LEFT || gp.pressed.DPAD_RIGHT){
+				owner.facing = (gp.pressed.DPAD_LEFT) ? FlxObject.LEFT : FlxObject.RIGHT;
+				owner.animation.play("jumping");
+				owner.acceleration.x = gp.pressed.DPAD_LEFT ? -300 : 300;
+			}
 		}
 	}
 }
@@ -199,11 +256,13 @@ class DoubleJump extends FlxFSMState<FlxSprite>
 			owner.animation.play("jumping");
 			owner.acceleration.x = FlxG.keys.pressed.LEFT ? -300 : 300;
 			}
-			else if(gp.pressed.DPAD_LEFT || gp.pressed.DPAD_RIGHT){
-				owner.facing = (gp.pressed.DPAD_LEFT) ? FlxObject.LEFT : FlxObject.RIGHT;
-				owner.animation.play("jumping");
-				owner.acceleration.x = gp.pressed.DPAD_LEFT ? -300 : 300;
-		}
+			else if (gp != null){
+				if(gp.pressed.DPAD_LEFT || gp.pressed.DPAD_RIGHT){
+					owner.facing = (gp.pressed.DPAD_LEFT) ? FlxObject.LEFT : FlxObject.RIGHT;
+					owner.animation.play("jumping");
+					owner.acceleration.x = gp.pressed.DPAD_LEFT ? -300 : 300;
+				}
+			}
 		}
 	}
 }
@@ -260,11 +319,46 @@ class SuperJump extends Jump
 	}
 }
 
-class Fire extends FlxFSMState<FlxSprite>
+class Spit extends FlxFSMState<FlxSprite>
 {
+	var gp:FlxGamepad = FlxG.gamepads.lastActive;
+	
 	override public function enter(owner:FlxSprite, fsm:FlxFSM<FlxSprite>):Void 
 	{
-		//shoot goes here
+		owner.animation.play("jumping");
+	}
+
+	override public function update(elapsed:Float, owner:FlxSprite, fsm:FlxFSM<FlxSprite>):Void
+	{
+		var playState:PlayState = cast FlxG.state;
+		var goo:FlxSprite = playState.playerGoo.recycle();
+		
+			if (FlxG.keys.pressed.SPACE)
+			{	
+				goo.reset(owner.x + owner.width/2 - goo.width/2, owner.y);
+				if (owner.facing == FlxObject.RIGHT){
+					goo.velocity.x = 200;
+					goo.acceleration.y = 200;
+				}
+				if (owner.facing == FlxObject.LEFT){
+					goo.velocity.x = -200;
+					goo.acceleration.y = 200;
+				}
+				
+			}
+			else if (gp != null){
+				if (gp.pressed.X){
+					goo.reset(owner.x + owner.width/2 - goo.width/2, owner.y);
+					if (owner.facing == FlxObject.RIGHT){
+						goo.velocity.x = 200;
+						goo.acceleration.y = 200;
+					}
+					if (owner.facing == FlxObject.LEFT){
+						goo.velocity.x = -200;
+						goo.acceleration.y = 200;
+					}
+				}
+			}
 	}
 }
 
